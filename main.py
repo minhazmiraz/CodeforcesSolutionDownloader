@@ -2,6 +2,7 @@ import urllib
 import json
 import sys
 import time, os
+import re
 from bs4 import BeautifulSoup
 
 MAX_SUBS = 1000000
@@ -12,7 +13,7 @@ if (len(sys.argv) < 2):
 
 handle = sys.argv[1]
 
-DOWNLOAD_DIR = 'Solutions'
+DOWNLOAD_DIR = handle
 SUBMISSION_URL = 'http://codeforces.com/contest/{ContestId}/submission/{SubmissionId}'
 USER_INFO_URL = 'http://codeforces.com/api/user.status?handle={handle}&from=1&count={count}'
 
@@ -35,7 +36,7 @@ def parse(source_code):
         source_code = source_code.replace(key, replacer[key])
     return source_code
 
-base_dir = DOWNLOAD_DIR + '/' + handle
+base_dir = handle
 if not os.path.exists(base_dir):
     os.makedirs(base_dir)
 
@@ -51,7 +52,12 @@ print 'Fetching %d submissions' % len(submissions)
 
 start_time = time.time()
 for submission in submissions:
-    con_id, sub_id = submission['contestId'], submission['id'],
+    try:    
+	con_id = submission['contestId']
+    except:
+	print 'KeyError'
+	continue
+    sub_id = submission['id']
     prob_name, prob_id = submission['problem']['name'], submission['problem']['index']
     comp_lang = submission['programmingLanguage']
     submission_full_url = SUBMISSION_URL.format(ContestId=con_id, SubmissionId=sub_id)
@@ -64,10 +70,8 @@ for submission in submissions:
         continue
     result = submission_text.text.replace('\r', '')
     ext = get_ext(comp_lang)
-    new_directory = base_dir + '/' + str(con_id)
-    if not os.path.exists(new_directory):
-        os.makedirs(new_directory)
-    file = open(new_directory + '/' + prob_id + ' [' + prob_name + ']' + '.' + ext, 'w')
+    new_prob_name = re.sub(r"[^a-zA-Z0-9]+", ' ', prob_name).replace(" ", "_")
+    file = open(handle + '/' + str(con_id) + prob_id + '[' + new_prob_name + ']' + '.' + ext, 'w')
     file.write(result)
     file.close()
 end_time = time.time()
